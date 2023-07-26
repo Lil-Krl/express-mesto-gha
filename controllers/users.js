@@ -33,7 +33,11 @@ module.exports.getUserById = (req, res, next) => {
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   userSchema
-    .findByIdAndUpdate(req.user._id, { name, about }, { new: true, runValidators: true })
+    .findByIdAndUpdate(
+      req.user._id,
+      { name, about },
+      { new: true, runValidators: true },
+    )
     .then((user) => {
       if (!user) {
         throw new NotFound('Пользователь не найден');

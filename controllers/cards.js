@@ -30,8 +30,7 @@ module.exports.createCards = (req, res, next) => {
 // удаляем карточку
 module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
-  return cardSchema
-    .findById(cardId)
+  return cardSchema.findById(cardId)
     .then((card) => {
       if (!card) {
         throw new NotFound('Пользователь не найден');
@@ -39,7 +38,7 @@ module.exports.deleteCard = (req, res, next) => {
       if (!card.owner.equals(req.user._id)) {
         return next(new CurrentErr('Вы не можете удалить не свою карточку'));
       }
-      return card.remove().then(() => res.send({ messasge: 'Карточка удалена!' }));
+      return card.remove().then(() => res.send({ message: 'Карточка удалена!' }));
     })
     .catch(next);
 };
@@ -60,7 +59,7 @@ module.exports.getLikes = (req, res, next) => {
     })
     .catch((err) => {
       if (err.name === 'CastError') {
-        return next(new BadRequest('Переданы неккоректные данные для лайка'));
+        return next(new BadRequest('Переданы некорректные данные для лайка'));
       }
       return next(err);
     });
