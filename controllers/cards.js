@@ -3,7 +3,6 @@ const NotFound = require('../errors/NotFound');
 const CurrentErr = require('../errors/CurrentErr');
 const BadRequest = require('../errors/BadRequest');
 
-// возвращаем все карточки
 module.exports.getCards = (req, res, next) => {
   cardSchema
     .find({})
@@ -11,7 +10,6 @@ module.exports.getCards = (req, res, next) => {
     .catch(next);
 };
 
-// создаем карточку
 module.exports.createCards = (req, res, next) => {
   const { name, link } = req.body;
   const owner = req.user._id;
@@ -20,14 +18,13 @@ module.exports.createCards = (req, res, next) => {
     .then((card) => res.status(201).send(card))
     .catch((err) => {
       if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные при создании карточки.'));
+        next(new BadRequest('Переданы некорректные данные при создании карточки'));
       } else {
         next(err);
       }
     });
 };
 
-// удаляем карточку
 module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
   return cardSchema.findById(cardId)
@@ -43,7 +40,6 @@ module.exports.deleteCard = (req, res, next) => {
     .catch(next);
 };
 
-// поставить лайк карточке
 module.exports.getLikes = (req, res, next) => {
   cardSchema
     .findByIdAndUpdate(
@@ -65,7 +61,6 @@ module.exports.getLikes = (req, res, next) => {
     });
 };
 
-// убрать лайк с карточки
 module.exports.deleteLikes = (req, res, next) => {
   cardSchema
     .findByIdAndUpdate(

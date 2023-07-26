@@ -1,8 +1,7 @@
-const userSchema = require('../models/user');
 const BadRequest = require('../errors/BadRequest');
 const NotFound = require('../errors/NotFound');
+const userSchema = require('../models/user');
 
-// возвращает всех пользователей
 module.exports.getUsers = (req, res, next) => {
   userSchema
     .find({})
@@ -10,7 +9,6 @@ module.exports.getUsers = (req, res, next) => {
     .catch(next);
 };
 
-// возвращает пользователя по _id
 module.exports.getUserById = (req, res, next) => {
   const { userId } = req.params;
   userSchema.findById(userId)
@@ -29,7 +27,6 @@ module.exports.getUserById = (req, res, next) => {
     });
 };
 
-// обновляет профиль
 module.exports.updateUser = (req, res, next) => {
   const { name, about } = req.body;
   userSchema
@@ -51,7 +48,6 @@ module.exports.updateUser = (req, res, next) => {
     });
 };
 
-// обновляет аватар
 module.exports.updateAvatar = (req, res, next) => {
   const { avatar } = req.body;
   userSchema
