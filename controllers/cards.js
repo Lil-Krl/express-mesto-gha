@@ -27,17 +27,23 @@ module.exports.createCards = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
-  return cardSchema.findByIdAndRemove(cardId)
+  return cardSchema.findByIdAnd(cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFound('Пользователь не найден');
+        throw new NotFound('Карточка не найдена');
       }
       if (!card.owner.equals(req.user._id)) {
         return next(new CurrentErr('Вы не можете удалить не свою карточку'));
       }
-      return card.remove().then(() => res.send({ message: 'Карточка удалена!' }));
+      res.send(card);
     })
-    .catch(next);
+    .catch((err) => {
+      if (err.name === 'CastError') {
+        next(new BadRequest('Переданы некорректные данные при получении карточки'));
+        return;
+      }
+      next(err);
+    });
 };
 
 module.exports.getLikes = (req, res, next) => {
@@ -49,7 +55,7 @@ module.exports.getLikes = (req, res, next) => {
     )
     .then((card) => {
       if (!card) {
-        throw new NotFound('Пользователь не найден');
+        throw new NotFound('Карточка не найден');
       }
       res.send({ data: card });
     })
@@ -70,7 +76,7 @@ module.exports.deleteLikes = (req, res, next) => {
     )
     .then((card) => {
       if (!card) {
-        throw new NotFound('Пользователь не найден');
+        throw new NotFound('Карточка не найдена');
       }
       res.send({ data: card });
     })
