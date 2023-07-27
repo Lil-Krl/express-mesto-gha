@@ -35,15 +35,9 @@ module.exports.deleteCard = (req, res, next) => {
       if (!card.owner.equals(req.user._id)) {
         return next(new CurrentErr('Вы не можете удалить не свою карточку'));
       }
-      res.send(card);
+      return card.remove().then(() => res.status(200).send({ message: 'Карточка удалена!' }));
     })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        next(new BadRequest('Переданы некорректные данные при получении карточки'));
-        return;
-      }
-      next(err);
-    });
+    .catch(next);
 };
 
 module.exports.getLikes = (req, res, next) => {
