@@ -1,52 +1,52 @@
 const express = require('express');
+const cookieParser = require('cookie-parser');
 const bodyParser = require('body-parser');
 const mongoose = require('mongoose');
-const helmet = require('helmet');
-const rateLimit = require('express-rate-limit');
 const { errors } = require('celebrate');
-const router = require('./routes');
+const usersRouter = require('./routes/users');
+const cardsRouter = require('./routes/cards');
+const { login, createUser } = require('./controllers/users');
+const handleError = require('./middlewares/handleError');
 const auth = require('./middlewares/auth');
+const { validationLogin, validationCreateUser } = require('./middlewares/validation');
+
+const {
+  MONGODB_URL = 'mongodb://127.0.0.1:27017/mestodb',
+  PORT = 3000,
+} = process.env;
 
 const app = express();
 
+app.use(cookieParser());
 app.use(bodyParser.json());
-const { validationCreateUser, validationLogin } = require('./middlewares/validation');
-
-const { PORT = 3000, MONGO_URL = 'mongodb://127.0.0.1:27017/mestodb' } = process.env;
-const { createUsers, login } = require('./controllers/auth');
+app.use(bodyParser.urlencoded({ extended: true }));
 
 app.post('/signin', validationLogin, login);
-app.post('/signup', validationCreateUser, createUsers);
+app.post('/signup', validationCreateUser, createUser);
+
 app.use(auth);
-app.use(router);
-app.use(helmet());
-const limiter = rateLimit({
-  windowMs: 15 * 60 * 1000,
-  max: 100,
-  standardHeaders: true,
-  legacyHeaders: false,
+
+app.use('/cards', cardsRouter);
+app.use('/users', usersRouter);
+app.use('*', (req, res) => {
+  res.status(404).send({
+    message: 'Запрашиваемый адрес не найден.',
+  });
 });
-app.use(limiter);
-async function connect() {
+app.use(errors());
+app.use(handleError);
+
+const startServer = async () => {
   try {
-    await mongoose.set('strictQuery', false);
-    await mongoose.connect('mongodb://127.0.0.1:27017/mestodb');
-    console.log(`Установлено соединение - ${MONGO_URL}`);
+    await mongoose.connect(MONGODB_URL, {
+      useNewUrlParser: true,
+    });
+    console.log(`Установлено соединение - ${MONGODB_URL}`);
     await app.listen(PORT);
     console.log(`Сервер работает на порту - ${PORT}`);
   } catch (err) {
-    console.log(err);
+    console.log('Ошибка подключения к MongoDB', err);
   }
-}
-app.use(errors());
-app.use((err, req, res, next) => {
-  const { statusCode = 500, message } = err;
-  res.status(statusCode).send({
-    message: statusCode === 500
-      ? 'На сервере произошла ошибка'
-      : message,
-  });
-  next();
-});
+};
 
-connect();
+startServer();

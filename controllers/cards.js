@@ -1,84 +1,92 @@
-const cardSchema = require('../models/card');
+const Card = require('../models/card');
 const NotFound = require('../errors/NotFound');
-const CurrentErr = require('../errors/CurrentErr');
 const BadRequest = require('../errors/BadRequest');
+const CurrentErr = require('../errors/CurrentErr');
 
-module.exports.getCards = (req, res, next) => {
-  cardSchema
-    .find({})
-    .then((cards) => res.status(200).send(cards))
-    .catch(next);
+const createCard = async (req, res, next) => {
+  try {
+    const { name, link } = req.body;
+    const card = await Card.create({ name, link, owner: req.user._id });
+
+    res.status(201).send(card);
+  } catch (err) {
+    if (err.name === 'ValidationError') {
+      next(new BadRequest('Переданы некорректные данные при создании карточки.'));
+    } else {
+      next(err);
+    }
+  }
 };
 
-module.exports.createCards = (req, res, next) => {
-  const { name, link } = req.body;
-  const owner = req.user._id;
-  cardSchema
-    .create({ name, link, owner })
-    .then((card) => res.status(201).send(card))
-    .catch((err) => {
-      if (err.name === 'ValidationError') {
-        next(new BadRequest('Переданы некорректные данные при создании карточки'));
-      } else {
-        next(err);
-      }
-    });
+const getCards = async (req, res, next) => {
+  try {
+    const cards = await Card.find({});
+
+    res.send(cards);
+  } catch (err) {
+    next(err);
+  }
 };
 
-module.exports.deleteCard = (req, res, next) => {
-  const { cardId } = req.params;
-  return cardSchema
-    .findByIdAndRemove(cardId)
-    .then((card) => {
-      if (!card) {
-        throw new NotFound('Пользователь не найден');
-      }
-      if (!card.owner.equals(req.user._id)) {
-        return next(new CurrentErr('Вы не можете удалить не свою карточку'));
-      }
-      return card.remove().then(() => res.send({ messasge: 'Карточка удалена!' }));
-    })
-    .catch(next);
+const deleteCard = async (req, res, next) => {
+  try {
+    const card = await Card.findById(req.params.id);
+
+    if (!card) {
+      throw new NotFound('Карточка не найдена');
+    }
+
+    if (card.owner.toString() !== req.user._id) {
+      throw new CurrentErr('Вы не можете удалить чужую карточку');
+    }
+
+    await Card.findByIdAndDelete(req.params.id);
+
+    res.send(card);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      next(new BadRequest('Переданы некорректные данные'));
+    } else {
+      next(err);
+    }
+  }
 };
 
-module.exports.getLikes = (req, res, next) => {
-  cardSchema
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $addToSet: { likes: req.user._id } },
+const handleCardLike = async (req, res, next) => {
+  try {
+    let action;
+
+    if (req.method === 'PUT') {
+      action = '$addToSet';
+    }
+
+    if (req.method === 'DELETE') {
+      action = '$pull';
+    }
+
+    const card = await Card.findByIdAndUpdate(
+      req.params.id,
+      { [action]: { likes: req.user._id } },
       { new: true },
-    )
-    .then((card) => {
-      if (!card) {
-        throw new NotFound('Карточка не найден');
-      }
-      res.send({ data: card });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new BadRequest('Переданы некорректные данные для лайка'));
-      }
-      return next(err);
-    });
+    );
+
+    if (!card) {
+      throw new NotFound('Передан несуществующий _id карточки');
+    }
+
+    res.send(card);
+  } catch (err) {
+    if (err.name === 'CastError') {
+      next(new BadRequest('Переданы некорректные данные для постановки/снятии лайка'));
+    } else {
+      next(err);
+    }
+  }
 };
 
-module.exports.deleteLikes = (req, res, next) => {
-  cardSchema
-    .findByIdAndUpdate(
-      req.params.cardId,
-      { $pull: { likes: req.user._id } },
-      { new: true },
-    )
-    .then((card) => {
-      if (!card) {
-        throw new NotFound('Карточка не найдена');
-      }
-      res.send({ data: card });
-    })
-    .catch((err) => {
-      if (err.name === 'CastError') {
-        return next(new BadRequest('Переданы некорректные данные для лайка'));
-      }
-      return next(err);
-    });
+module.exports = {
+  createCard,
+  getCards,
+  deleteCard,
+  handleCardLike,
 };
