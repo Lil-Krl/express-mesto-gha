@@ -27,15 +27,16 @@ module.exports.createCards = (req, res, next) => {
 
 module.exports.deleteCard = (req, res, next) => {
   const { cardId } = req.params;
-  return cardSchema.findByIdAnd(cardId)
+  return cardSchema
+    .findByIdAndRemove(cardId)
     .then((card) => {
       if (!card) {
-        throw new NotFound('Карточка не найдена');
+        throw new NotFound('Пользователь не найден');
       }
       if (!card.owner.equals(req.user._id)) {
         return next(new CurrentErr('Вы не можете удалить не свою карточку'));
       }
-      return card.remove().then(() => res.send({ message: 'Карточка удалена!' }));
+      return card.remove().then(() => res.send({ messasge: 'Карточка удалена!' }));
     })
     .catch(next);
 };
